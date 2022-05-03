@@ -1,0 +1,107 @@
+---
+name: balenna
+
+on:
+  pull_request:
+    types: [opened, synchronize, closed]
+    branches:
+      - master
+
+env:
+  # https://github.com/product-os/environment-production/pull/277
+  # https://github.com/balena-io/balena-cli/issues/2447
+  AWS_EC2_INSTANCE_TYPE: c6a.xlarge
+
+jobs:
+  bCat:
+    strategy:
+      fail-fast: true
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: produce docker-compose
+        id: generate-compose
+        if: github.event_name === 'pull_request'
+        runs: OUR DOCKER COMPOSE GENERATOR
+
+      - name: push draft or finalise release
+        id: push-release
+        uses: balena-io/deploy-to-balena-action@master
+        with:
+          balena_token: ${{ secrets.BALENA_API_KEY_PUSH }}
+          cache: false
+          environment: ${{ env.ENVIRONMENT }}
+          fleet: ${{ env.FLEET }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          versionbot: true
+
+
+      - name: check fleet for DUT devices
+        id: check-devices
+        run: CHECK TAGS and FIND TAGS
+
+      
+
+     # https://github.com/balena-io/balena-cli/issues/1543
+      - name: pin DUT devices to draft release
+        id: pin-device
+        if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
+        run: |
+          set -uae
+
+          [[ '${{ env.VERBOSE }}' =~ on|On|Yes|yes|true|True ]] && set -x
+
+          balena login --token '${{ secrets.BALENA_API_KEY_TEST }}'
+
+          balena_releases="$(mktemp)"
+          balena releases '${{ env.FLEET }}' | tail -n +2 | head -n ${{ env.RELEASES }} > "${balena_releases}"
+
+          # convert to JSON to find the correct draft release id and commit
+          release_id="$(while IFS=' ' read -r id commit created_at status semver is_final
+          do
+            printf '{"id":%s,"commit":"%s","created_at":"%s","status":"%s","semver":"%s","is_final":%s}\n' \
+              "${id}" "${commit}" "${created_at}" "${status}" "${semver}" "${is_final}"
+          done < "${balena_releases}" | jq -s | jq -r '.[] | select((.id==${{ steps.push-release.outputs.release_id }}) and (.is_final==false) and (.status=="success")).id')"
+
+          commit="$(while IFS=' ' read -r id commit created_at status semver is_final
+          do
+            printf '{"id":%s,"commit":"%s","created_at":"%s","status":"%s","semver":"%s","is_final":%s}\n' \
+              "${id}" "${commit}" "${created_at}" "${status}" "${semver}" "${is_final}"
+          done < "${balena_releases}" | jq -s | jq -r '.[] | select(.id==${{ steps.push-release.outputs.release_id }}).commit')"
+
+          if ! [ '${{ steps.register-test-device.outputs.balena_device_id }}' = '' ] \
+            && ! [ "${release_id}" = '' ] \
+            && ! [ "${commit}" = '' ]; then
+              # pin DUT to draft release
+              curl -X PATCH --silent --retry ${{ env.RETRY }} --fail -o /dev/null \
+                'https://api.${{ env.ENVIRONMENT }}/v6/device?$filter=id%20in%20(${{ steps.register-test-device.outputs.balena_device_id }})' \
+                -H 'authorization: Bearer ${{ secrets.BALENA_API_KEY_TEST }}' \
+                -H 'content-type: application/json' \
+                --data-raw "{\"should_be_running__release\":${release_id}}" \
+                --compressed
+          fi
+
+          balena device ${{ steps.register-test-device.outputs.balena_device_uuid }}
+
+          app_id="$(balena fleet ${{ env.FLEET }} | grep ^ID: | cut -c14-)"
+
+          echo "::set-output name=balena_app_id::${app_id}"
+
+      # (TBC) additional overrides for testing (i.e. DB_USER, DB_PASSWORD, etc.)
+
+      - name: FIND IF THE CONTAINER HAS EXITED with which EXIT code 
+        id: generate-compose
+        if: github.event_name === 'pull_request'
+        runs: OUR DOCKER COMPOSE GENERATOR
+      
+      - name: MARK THE RELEASE WITH EXIT CODE 
+        id: generate-compose
+        if: github.event_name === 'pull_request'
+        runs: OUR DOCKER COMPOSE GENERATOR
+      
+      - name: PASS/FAIL the release 
+        id: generate-compose
+        if: github.event_name === 'pull_request'
+        runs: OUR DOCKER COMPOSE GENERATOR
+      
