@@ -2,6 +2,6 @@ version: '2.1'
 
 services:
   balena-node-hello-world:
-    build: ./balena-node-hello-world
+    build: .
     ports:
       - "80:80"

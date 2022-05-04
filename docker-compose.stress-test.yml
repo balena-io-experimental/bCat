@@ -1,9 +1,0 @@
-version: '2.1'
-
-services:
-  sut:
-    build: ./tests
-    command: run_tests.sh
-    depends_on:
-      - balena-node-hello-world
-  # Other services 
