@@ -1,5 +1,5 @@
 ---
-name: balenna
+name: bCat Prototype
 
 on:
   pull_request:
@@ -8,22 +8,47 @@ on:
       - master
 
 env:
-  # https://github.com/product-os/environment-production/pull/277
-  # https://github.com/balena-io/balena-cli/issues/2447
-  AWS_EC2_INSTANCE_TYPE: c6a.xlarge
+  BALENA_CLI_URL: https://github.com/balena-io/balena-cli/releases/download
+  BALENA_CLI_VERSION: 13.1.11
+  DEBUG: 0
+  DEVICE_TYPE: raspberrypi4-64
+  FLEET: gh_vipulgupta2048/bcat-proto
+  ENVIRONMENT: balena-cloud.com
+  FLEET: balena/balena-cloud
+  REGISTRY_USER: balenaci
+  RELEASES: 50
+  RETRY: 3
+  SOCAT_VERSION: 1.7.4.2
+  TEST_DEVICE_TYPE: qemux86-64
+  VERBOSE: "false"
 
 jobs:
-  bCat:
+  balenaCloud automated testing:
     strategy:
       fail-fast: true
-
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: install additional dependencies
+        id: extra-dependencies
+        if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
+        run: |
+          set -ue
+          if ! [[ "$(${RUNNER_TEMP}/balena-cli/balena version)" =~ "${BALENA_CLI_VERSION}" ]]; then
+              release_zip="balena-cli-v${BALENA_CLI_VERSION}-linux-x64-standalone.zip"
+              wget -q "${BALENA_CLI_URL}/v${BALENA_CLI_VERSION}/${release_zip}" \
+                && unzip -q "${release_zip}" -d "${RUNNER_TEMP}" \
+                && rm "${release_zip}"
+          fi
+          "${RUNNER_TEMP}/balena-cli/balena" version
+
 
       - name: produce docker-compose
         id: generate-compose
-        if: github.event_name === 'pull_request'
-        runs: OUR DOCKER COMPOSE GENERATOR
+        if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
+        runs: yq '. *= load("docker-compose.test.yml")' docker-compose.yml
 
       - name: push draft or finalise release
         id: push-release
@@ -32,16 +57,16 @@ jobs:
           balena_token: ${{ secrets.BALENA_API_KEY_PUSH }}
           cache: false
           environment: ${{ env.ENVIRONMENT }}
-          fleet: ${{ env.FLEET }}
+          fleet: bcat-proto
           github_token: ${{ secrets.GITHUB_TOKEN }}
           versionbot: true
 
-
       - name: check fleet for DUT devices
-        id: check-devices
-        run: CHECK TAGS and FIND TAGS
+        id: check-DUT-devices
+        run: |
 
-      
+# We need to this next step as many times as there are DUT devices in the fleet, so figure out a matrix type execution
+
 
      # https://github.com/balena-io/balena-cli/issues/1543
       - name: pin DUT devices to draft release
@@ -82,7 +107,7 @@ jobs:
                 --compressed
           fi
 
-          balena device ${{ steps.register-test-device.outputs.balena_device_uuid }}
+          balena device ${{ steps.check-DUT-devices.outputs.balena_device_uuid }}
 
           app_id="$(balena fleet ${{ env.FLEET }} | grep ^ID: | cut -c14-)"
 
