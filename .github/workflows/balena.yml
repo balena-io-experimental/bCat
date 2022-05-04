@@ -29,7 +29,6 @@ jobs:
 
       - name: install additional dependencies
         id: extra-dependencies
-        if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
         run: |
           set -ue
           if ! [[ "$(${RUNNER_TEMP}/balena-cli/balena version)" =~ "${BALENA_CLI_VERSION}" ]]; then
