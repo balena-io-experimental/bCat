@@ -115,6 +115,7 @@ jobs:
 
       # (TBC) additional overrides for testing (i.e. DB_USER, DB_PASSWORD, etc.)
 
+<<<<<<< Updated upstream
       - name: FIND IF THE CONTAINER HAS EXITED with which EXIT code 
         id: generate-compose
         if: github.event_name === 'pull_request'
@@ -130,3 +131,19 @@ jobs:
         if: github.event_name === 'pull_request'
         runs: OUR DOCKER COMPOSE GENERATOR
       
+=======
+      # - name: FIND IF THE CONTAINER HAS EXITED with which EXIT code
+      #   id: generate-compose
+      #   if: github.event_name === 'pull_request'
+      #   runs: OUR DOCKER COMPOSE GENERATOR
+
+      # - name: MARK THE RELEASE WITH EXIT CODE
+      #   id: generate-compose
+      #   if: github.event_name === 'pull_request'
+      #   runs: OUR DOCKER COMPOSE GENERATOR
+
+      # - name: PASS/FAIL the release
+      #   id: generate-compose
+      #   if: github.event_name === 'pull_request'
+      #   runs: OUR DOCKER COMPOSE GENERATOR
+>>>>>>> Stashed changes
