@@ -10,3 +10,6 @@ services:
       - "audio"
     volumes:
       - 'pulse:/run/pulse'
+    labels:
+      io.balena.features.supervisor-api: 1
+      

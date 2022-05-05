@@ -1,29 +1,38 @@
 #!/bin/bash
 
+recordedFile=/usr/src/result.wav
+
 echo "Starting SUT..."
 
-chmod +x test.sh 
-./test.sh
+# chmod +x test.sh 
+# ./test.sh
 
-result=$?
+# result=$?
 
-echo "SUT exited with code $result"
+# echo "SUT exited with code $result"
+
+releaseID=$(curl --silent "${BALENA_SUPERVISOR_ADDRESS}/v2/applications/state?apikey=${BALENA_SUPERVISOR_API_KEY}" | jq .[\"bcat-proto\"][\"services\"][\"sut\"][\"releaseId\"])
+
+echo ${releaseID}
 
 #  Updating release tag
-
-curl -X POST \
+curl -X POST --silent --compressed \
 "https://api.balena-cloud.com/v6/release_tag" \
 -H "Content-Type: application/json" \
 -H "Authorization: Bearer ${BALENACLOUD_API_KEY}" \
 --data '{
-    "release": "956d4112d76d3b1d35d2615249b79259",
+    "release": "${releaseID}",
     "tag_key": "test_result",
-    "value": "$result"
+    "value": "${result}"
 }'
 
 echo "Updated release tag with exit code $result"
 
 # Upload files to temporary storage 
-curl -T /usr/src/result.wav temp.sh
+
+if test -f "${recordedFile}"; then
+    echo "Uploading ${recordedFile} exists."
+    curl -T ${recordedFile} temp.sh
+fi
 
 exit $result
