@@ -156,20 +156,19 @@ jobs:
       #   id: sut-container-status
       #   if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
       #   run: |
+      #     while true; do
+      #       set -uae
+      #       result = curl -X GET --silent --retry ${{ env.RETRY }} --fail -o /dev/null \
+      #       'https://api.balena-cloud.com/v6/release_tag?\$filter=release/commit%20eq%20${{ steps.push-release.outputs.release_id }}' \
+      #       -H 'Content-Type: application/json' \
+      #       -H 'Authorization: Bearer ${{ secrets.BALENACLOUD_API_KEY }}'
 
-      #   while true; do
-      #     set -uae
-      #     result = curl -X GET --silent --retry ${{ env.RETRY }} --fail -o /dev/null \
-      #     'https://api.balena-cloud.com/v6/release_tag?\$filter=release/commit%20eq%20${{ steps.push-release.outputs.release_id }}' \
-      #     -H 'Content-Type: application/json' \
-      #     -H 'Authorization: Bearer ${{ secrets.BALENACLOUD_API_KEY }}'
-
-      #     if result === '"success"'; then
-      #       echo "::set-output name=sut_container_status::success"
-      #     else
-      #       echo "::set-output name=sut_container_status::failure"
-      #     fi
-      #   done
+      #       if result === '"success"'; then
+      #         echo "::set-output name=sut_container_status::success"
+      #       else
+      #         echo "::set-output name=sut_container_status::failure"
+      #       fi
+      #     done
 
       # - name: MARK THE RELEASE WITH EXIT CODE
       #   id: generate-compose
