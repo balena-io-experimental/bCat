@@ -106,6 +106,17 @@ jobs:
           set -uae
 
           [[ '${{ env.VERBOSE }}' =~ on|On|Yes|yes|true|True ]] && set -x
+          balena login --token '${{ secrets.BALENACLOUD_API_KEY }}'
+          balena whoami
+
+          while [[ "$(curl -X POST --silent --retry ${{ env.RETRY }} --fail \
+            'https://api.${{ env.ENVIRONMENT }}/supervisor/v1/device' \
+            --header 'authorization: Bearer ${{ secrets.BALENACLOUD_API_KEY }}' \
+            --header 'Content-Type:application/json' \
+            --data '{"uuid": "${{ steps.find-test-device.outputs.balena_dut_uuid }}", "method": "GET"}' \
+            --compressed | jq -r '.update_pending')" =~ ^true$ ]]; do
+              sleep "$(( ( RANDOM % ${{ env.RETRY }} ) + ${{ env.RETRY }} ))s"
+          done
 
           max_retries=100
           retry_count=1
