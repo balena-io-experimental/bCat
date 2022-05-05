@@ -16,7 +16,7 @@ env:
   RELEASES: 50
   RETRY: 3
   TEST_DEVICE_TYPE: qemux86-64
-  VERBOSE: "false"
+  VERBOSE: "true"
 
 jobs:
   balena-automated-testing:
