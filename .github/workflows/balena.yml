@@ -10,7 +10,7 @@ on:
 env:
   BALENA_CLI_URL: https://github.com/balena-io/balena-cli/releases/download
   BALENA_CLI_VERSION: 13.1.11
-  DEVICE_TYPE: raspberrypi4-64
+  DEVICE_TYPE: raspberrypi3
   FLEET: gh_vipulgupta2048/bcat-proto
   ENVIRONMENT: balena-cloud.com
   RELEASES: 50
@@ -44,7 +44,7 @@ jobs:
       - name: produce docker-compose
         id: generate-compose
         if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
-        run: yq '. *= load("docker-compose.test.yml")' docker-compose.yml
+        run: yq '. *= load("docker-compose.test.yml")' docker-compose.yml > docker-compose.yml
 
       - name: push draft or finalise release
         id: push-release
@@ -74,7 +74,7 @@ jobs:
             | jq -r '.d[].id')
           echo "::set-output name=balena_dut_id::${dut_id}"
 
-     # https://github.com/balena-io/balena-cli/issues/1543
+      # https://github.com/balena-io/balena-cli/issues/1543
       - name: pin DUT devices to draft release
         id: pin-device
         if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
@@ -113,19 +113,45 @@ jobs:
                 --compressed
           fi
 
-      # (TBC) additional overrides for testing (i.e. DB_USER, DB_PASSWORD, etc.)
+      # - name: Can we stream the logs from the SUT container 
+      #   id: sut-container-status
+      #   if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
+      #   run: |
 
-      # - name: FIND IF THE CONTAINER HAS EXITED with which EXIT code
-      #   id: generate-compose
-      #   if: github.event_name === 'pull_request'
-      #   run: OUR DOCKER COMPOSE GENERATOR
+      # (TBC) additional overrides for testing (i.e. DB_USER, DB_PASSWORD, etc.)
+      # - name: Poll for SUT container STATUS
+      #   id: sut-container-status
+      #   if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
+      #   run: |
+
+
+      # - name: Poll for SUT container STATUS
+      #   id: sut-container-status
+      #   if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
+      #   run: |
+
+      #   while true; do
+      #     set -uae
+      #     result = curl -X GET --silent --retry ${{ env.RETRY }} --fail -o /dev/null \
+      #     'https://api.balena-cloud.com/v6/release_tag?\$filter=release/commit%20eq%20${{ steps.push-release.outputs.release_id }}' \
+      #     -H 'Content-Type: application/json' \
+      #     -H 'Authorization: Bearer ${{ secrets.BALENACLOUD_API_KEY }}'
+
+      #     if result === '"success"'; then
+      #       echo "::set-output name=sut_container_status::success"
+      #     else
+      #       echo "::set-output name=sut_container_status::failure"
+      #     fi
+      #   done  
 
       # - name: MARK THE RELEASE WITH EXIT CODE
       #   id: generate-compose
-      #   if: github.event_name === 'pull_request'
+      #   if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
       #   run: OUR DOCKER COMPOSE GENERATOR
+
+      # ddQddwapdPRts9tZPUMwBtN69j6JNwOY
 
       # - name: PASS/FAIL the release
       #   id: generate-compose
-      #   if: github.event_name === 'pull_request'
+      #   if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
       #   run: OUR DOCKER COMPOSE GENERATOR

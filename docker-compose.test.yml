@@ -1,9 +1,12 @@
 version: '2.1'
 
 services:
+  # Test composition that runs on devices marked for testing
   sut:
-    build: ./tests
-    command: run_tests.sh
+    build: ./sut
+    privileged: true
+    restart: "no"
     depends_on:
-      - balena-node-hello-world
-  # Other services 
+      - "audio"
+    volumes:
+      - 'pulse:/run/pulse'

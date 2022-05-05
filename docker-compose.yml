@@ -1,7 +1,20 @@
 version: '2.1'
 
+volumes:
+  # Only required if using PA over UNIX socket
+  pulse:
+
+
 services:
-  balena-node-hello-world:
-    build: .
-    ports:
-      - "80:80"
+  # Primary composition that runs on all devices in a fleet
+  # The audio block
+  audio:
+    image: bh.cr/balenablocks/audio-armv7hf
+    privileged: true
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+    labels:
+      io.balena.features.dbus: 1
+    volumes:
+      - 'pulse:/run/pulse'
