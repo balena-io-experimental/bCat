@@ -11,20 +11,20 @@ ENV DBUS_SYSTEM_BUS_ADDRESS=unix:path=/host/run/dbus/system_bus_socket
 ENV PULSE_SERVER=unix:/run/pulse/pulseaudio.socket
 
 # Install dependencies
-RUN install_packages \
-  alsa-utils \
-  xxd \
-  ffmpeg \
-  mplayer \
-  libchromaprint-tools \
-  git \
-  gcc g++ python3-dev libblas3 liblapack3 liblapack-dev libblas-dev gfortran
+# RUN install_packages \
+#   alsa-utils \
+#   xxd \
+#   ffmpeg \
+#   mplayer \
+#   libchromaprint-tools \
+#   git \
+#   gcc g++ python3-dev libblas3 liblapack3 liblapack-dev libblas-dev gfortran
 
 
-# UDev configuration
-COPY 95-balena-audio.rules /etc/udev/rules.d/95-balena-audio.rules
+# # UDev configuration
+# COPY 95-balena-audio.rules /etc/udev/rules.d/95-balena-audio.rules
 
-RUN git clone https://github.com/dpwe/audfprint.git && cd audfprint && pip install -r requirements.txt && cd ..
+# RUN git clone https://github.com/dpwe/audfprint.git && cd audfprint && pip install -r requirements.txt && cd ..
 
 COPY test.wav test.wav
 COPY test.sh test.sh
