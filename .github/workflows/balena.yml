@@ -44,7 +44,7 @@ jobs:
       - name: produce docker-compose
         id: generate-compose
         if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
-        run: yq '. *= load("docker-compose.test.yml")' docker-compose.yml > docker-compose.yml
+        run: yq '. *= load("docker-compose.test.yml")' docker-compose.yml > docker-new.yml; cat docker-new.yml > docker-compose.yml; rm docker-new.yml 
 
       - name: push draft or finalise release
         id: push-release

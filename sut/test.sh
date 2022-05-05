@@ -1,6 +1,8 @@
+#!/bin/bash
+
 echo "setting up fingerprint check"
 cd audfprint
-#pip install -r requirements.txt
+# pip install -r requirements.txt
 
 python audfprint.py new --dbase fpdbase.pklz ../test.wav 
 

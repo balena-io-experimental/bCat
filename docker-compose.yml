@@ -4,7 +4,6 @@ volumes:
   # Only required if using PA over UNIX socket
   pulse:
 
-
 services:
   # Primary composition that runs on all devices in a fleet
   # The audio block

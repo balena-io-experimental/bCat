@@ -1,3 +1,5 @@
+#!/bin/bash
+
 echo "Starting SUT..."
 
 chmod +x test.sh 
