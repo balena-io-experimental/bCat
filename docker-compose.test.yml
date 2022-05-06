@@ -1,15 +1,20 @@
 version: '2.1'
 
+volumes:
+  # Only required if using PA over UNIX socket
+  settings:
+
 services:
   # Test composition that runs on devices marked for testing
   sut:
     build: ./sut
     privileged: true
     restart: "no"
+    network_mode: host
     depends_on:
-      - "audio"
+      - "browser"
     volumes:
-      - 'pulse:/run/pulse'
+      - 'settings:/data' # Only required if using PERSISTENT flag (see below)'
     labels:
       io.balena.features.supervisor-api: 1
       

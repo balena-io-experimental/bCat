@@ -1,33 +1,15 @@
 ARG BALENA_ARCH=%%BALENA_ARCH%%
 
-FROM balenalib/$BALENA_ARCH-debian-python:3.8
+FROM balenalib/$BALENA_ARCH-debian-node
 WORKDIR /usr/src
 
-# UDev is required to autodetect ALSA devices
 ENV UDEV=on
-ENV DBUS_SYSTEM_BUS_ADDRESS=unix:path=/host/run/dbus/system_bus_socket
 
+COPY lib lib
+COPY package.json package.json
+RUN npm install && install_packages jq 
 
-ENV PULSE_SERVER=unix:/run/pulse/pulseaudio.socket
-
-# Install dependencies
-# RUN install_packages \
-#   alsa-utils \
-#   xxd \
-#   ffmpeg \
-#   mplayer \
-#   libchromaprint-tools \
-#   git \
-#   gcc g++ python3-dev libblas3 liblapack3 liblapack-dev libblas-dev gfortran
-
-
-# # UDev configuration
-# COPY 95-balena-audio.rules /etc/udev/rules.d/95-balena-audio.rules
-
-# RUN git clone https://github.com/dpwe/audfprint.git && cd audfprint && pip install -r requirements.txt && cd ..
-
-COPY test.wav test.wav
-COPY test.sh test.sh
+COPY testImage.png testImage.png
 
 # Entrypoint
 COPY entry.sh .

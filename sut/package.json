@@ -1,0 +1,27 @@
+{
+  "name": "browser-block-dut",
+  "version": "1.0.0",
+  "description": "",
+  "main": "lib/index.js",
+  "scripts": {
+    "start": "node lib/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/balena-io-playground/browser-block-dut.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/balena-io-playground/browser-block-dut/issues"
+  },
+  "homepage": "https://github.com/balena-io-playground/browser-block-dut#readme",
+  "dependencies": {
+    "async-retry": "^1.3.3",
+    "bluebird": "^3.7.2",
+    "looks-same": "^7.3.0",
+    "request-promise": "^4.2.6",
+    "retry": "^0.13.1"
+  }
+}

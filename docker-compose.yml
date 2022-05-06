@@ -2,18 +2,16 @@ version: '2.1'
 
 volumes:
   # Only required if using PA over UNIX socket
-  pulse:
+  settings:
 
 services:
   # Primary composition that runs on all devices in a fleet
-  # The audio block
-  audio:
-    image: bh.cr/balenablocks/audio-armv7hf
-    privileged: true
+  browser:
+    image: bhcr.io/balenablocks/browser-armv7hf # where <arch> is one of aarch64, arm32 or amd64
+    privileged: true # required for UDEV to find plugged in peripherals such as a USB mouse
     network_mode: host
-    cap_add:
-      - NET_ADMIN
-    labels:
-      io.balena.features.dbus: 1
+    ports:
+        - '5011' # management API (optional)
+        - '35173' # Chromium debugging port (optional)
     volumes:
-      - 'pulse:/run/pulse'
+      - 'settings:/data' # Only required if using PERSISTENT flag (see below)
