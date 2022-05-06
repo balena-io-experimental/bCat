@@ -129,7 +129,7 @@ jobs:
                 -H 'content-type: application/json'
               exit 0
             else
-              sleep 5
+              sleep 10
               ((retry_count++))
             fi
           done
