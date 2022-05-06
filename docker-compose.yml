@@ -2,7 +2,7 @@ version: '2.1'
 
 volumes:
   # Only required if using PA over UNIX socket
-  pulse:
+  settings:
 
 services:
   # Primary composition that runs on all devices in a fleet

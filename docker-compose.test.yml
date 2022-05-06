@@ -1,5 +1,9 @@
 version: '2.1'
 
+volumes:
+  # Only required if using PA over UNIX socket
+  settings:
+
 services:
   # Test composition that runs on devices marked for testing
   sut:
