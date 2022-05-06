@@ -16,6 +16,7 @@ env:
   RELEASES: 50
   RETRY: 3
   TEST_DEVICE_TYPE: qemux86-64
+  SUT_RESULT_TAG_KEY: test_result
   VERBOSE: "true"
 
 jobs:
@@ -83,75 +84,40 @@ jobs:
 
           [[ '${{ env.VERBOSE }}' =~ on|On|Yes|yes|true|True ]] && set -x
 
-          balena login --token '${{ secrets.BALENACLOUD_API_KEY }}'
+          # pin DUT to draft release
+          curl -X PATCH --retry ${{ env.RETRY }} --fail -o /dev/null \
+            'https://api.${{ env.ENVIRONMENT }}/v6/device?$filter=id%20in%20(${{ steps.find-test-device.outputs.balena_dut_id }})' \
+            -H 'authorization: Bearer ${{ secrets.BALENACLOUD_API_KEY }}' \
+            -H 'content-type: application/json' \
+            --data-raw "{\"should_be_running__release\":${{ steps.push-release.outputs.release_id }}}" \
+            --compressed
 
-          balena_releases="$(mktemp)"
-          balena releases '${{ env.FLEET }}' | tail -n +2 | head -n ${{ env.RELEASES }} > "${balena_releases}"
+      - name: wait for SUT result
+        id: wait-test-result
+        if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
+        run: |
+          set -uae
 
-          # convert to JSON to find the correct draft release id and commit
-          release_id="$(while IFS=' ' read -r id commit created_at status semver is_final
-          do
-            printf '{"id":%s,"commit":"%s","created_at":"%s","status":"%s","semver":"%s","is_final":%s}\n' \
-              "${id}" "${commit}" "${created_at}" "${status}" "${semver}" "${is_final}"
-          done < "${balena_releases}" | jq -s | jq -r '.[] | select((.id==${{ steps.push-release.outputs.release_id }}) and (.is_final==false) and (.status=="success")).id')"
+          [[ '${{ env.VERBOSE }}' =~ on|On|Yes|yes|true|True ]] && set -x
 
-          commit="$(while IFS=' ' read -r id commit created_at status semver is_final
-          do
-            printf '{"id":%s,"commit":"%s","created_at":"%s","status":"%s","semver":"%s","is_final":%s}\n' \
-              "${id}" "${commit}" "${created_at}" "${status}" "${semver}" "${is_final}"
-          done < "${balena_releases}" | jq -s | jq -r '.[] | select(.id==${{ steps.push-release.outputs.release_id }}).commit')"
+          max_retries=100
+          retry_count=1
 
-          if ! [ '${{ steps.find-test-device.outputs.balena_dut_id }}' = '' ] \
-            && ! [ "${release_id}" = '' ] \
-            && ! [ "${commit}" = '' ]; then
-              # pin DUT to draft release
-              curl -X PATCH --silent --retry ${{ env.RETRY }} --fail -o /dev/null \
-                'https://api.${{ env.ENVIRONMENT }}/v6/device?$filter=id%20in%20(${{ steps.find-test-device.outputs.balena_dut_id }})' \
+          while [ $retry_count < $max_retries ]; do
+            result=$(curl -X GET --silent --retry ${{ env.RETRY }} --fail -o /dev/null \
+              'https://api.balena-cloud.com/v6/release_tag?$select=id,value&$filter=release%20eq%20${{ steps.push-release.outputs.release_id }}%20and%20tag_key%20eq%20%27${{ env.SUT_RESULT_TAG_KEY }}%27' \
+              -H 'authorization: Bearer ${{ secrets.BALENACLOUD_API_KEY }}' \
+              -H 'content-type: application/json' \
+              | jq -r '.d[].value?')
+
+            if [ -n "$result" ]; then
+              echo "::set-output name=sut_container_status::${result}"
+              $(curl -X DELETE --silent --retry ${{ env.RETRY }} --fail -o /dev/null \
+                'https://api.balena-cloud.com/v6/release_tag?$select=id,value&$filter=release%20eq%20${{ steps.push-release.outputs.release_id }}%20and%20tag_key%20eq%20%27${{ env.SUT_RESULT_TAG_KEY }}%27' \
                 -H 'authorization: Bearer ${{ secrets.BALENACLOUD_API_KEY }}' \
-                -H 'content-type: application/json' \
-                --data-raw "{\"should_be_running__release\":${release_id}}" \
-                --compressed
-          fi
-
-      # - name: Can we stream the logs from the SUT container
-      #   id: sut-container-status
-      #   if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
-      #   run: |
-
-      # (TBC) additional overrides for testing (i.e. DB_USER, DB_PASSWORD, etc.)
-      # - name: Poll for SUT container STATUS
-      #   id: sut-container-status
-      #   if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
-      #   run: |
-
-
-      # - name: Poll for SUT container STATUS
-      #   id: sut-container-status
-      #   if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
-      #   run: |
-
-      #   while true; do
-      #     set -uae
-      #     result = curl -X GET --silent --retry ${{ env.RETRY }} --fail -o /dev/null \
-      #     'https://api.balena-cloud.com/v6/release_tag?\$filter=release/commit%20eq%20${{ steps.push-release.outputs.release_id }}' \
-      #     -H 'Content-Type: application/json' \
-      #     -H 'Authorization: Bearer ${{ secrets.BALENACLOUD_API_KEY }}'
-
-      #     if result === '"success"'; then
-      #       echo "::set-output name=sut_container_status::success"
-      #     else
-      #       echo "::set-output name=sut_container_status::failure"
-      #     fi
-      #   done
-
-      # - name: MARK THE RELEASE WITH EXIT CODE
-      #   id: generate-compose
-      #   if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
-      #   run: OUR DOCKER COMPOSE GENERATOR
-
-      # ddQddwapdPRts9tZPUMwBtN69j6JNwOY
-
-      # - name: PASS/FAIL the release
-      #   id: generate-compose
-      #   if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
-      #   run: OUR DOCKER COMPOSE GENERATOR
+                -H 'content-type: application/json')
+            else
+              sleep 5
+              ((retry_count++))
+            fi
+          done
