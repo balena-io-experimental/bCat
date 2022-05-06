@@ -24,9 +24,9 @@ curl -X POST --compressed \
 -H "Content-Type: application/json" \
 -H "Authorization: Bearer ${BALENACLOUD_API_KEY}" \
 --data '{
-    "release": "${release_id}",
+    "release": "'${release_id}'",
     "tag_key": "test_result",
-    "value": "${result}"
+    "value": "'${result}'"
 }'
 
 echo "Updated release tag with exit code $result"
