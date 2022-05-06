@@ -33,4 +33,3 @@ COPY test.sh test.sh
 COPY entry.sh .
 CMD [ "/bin/bash", "/usr/src/entry.sh" ]
 
-

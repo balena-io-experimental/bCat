@@ -75,6 +75,13 @@ jobs:
             | jq -r '.d[].id')
           echo "::set-output name=balena_dut_id::${dut_id}"
 
+          dut_uuid=$(curl --silent --retry ${{ env.RETRY }} -o /dev/null \
+            'https://api.${{ env.ENVIRONMENT }}/v6/device?$top=1&$select=id&$filter=belongs_to__application%20eq%20(${app_id})%20and%20device_tag/any(dt:dt/tag_key%20eq%20%27dut:${{ env.DEVICE_TYPE }}%27)' \
+            -H 'authorization: Bearer ${{ secrets.BALENACLOUD_API_KEY }}' \
+            -H 'content-type: application/json' \
+            | jq -r '.d[].uuid')
+          echo "::set-output name=balena_dut_uuid::${dut_uuid}"
+
       # https://github.com/balena-io/balena-cli/issues/1543
       - name: pin DUT device to draft release
         id: pin-device
@@ -111,6 +118,10 @@ jobs:
               | jq -r '.d[].value?')
 
             if [ -n "$result" ]; then
+              balena login --token '${{ secrets.BALENACLOUD_API_KEY }}'
+              balena whoami
+              balena logs ${{ steps.find-test-device.outputs.balena_dut_uuid }} --service sut
+
               echo "::set-output name=sut_container_status::${result}"
               curl -X DELETE --silent --retry ${{ env.RETRY }} --fail -o /dev/null \
                 'https://api.balena-cloud.com/v6/release_tag?$select=id,value&$filter=release%20eq%20${{ steps.push-release.outputs.release_id }}%20and%20tag_key%20eq%20%27${{ env.SUT_RESULT_TAG_KEY }}%27' \
@@ -122,3 +133,6 @@ jobs:
               ((retry_count++))
             fi
           done
+          exit 1
+
+      # (TBC) additional overrides for testing (i.e. DB_USER, DB_PASSWORD, etc.)
