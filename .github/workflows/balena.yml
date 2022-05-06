@@ -110,7 +110,7 @@ jobs:
           max_retries=100
           retry_count=1
 
-          while [ $retry_count < $max_retries ]; do
+          while [ $retry_count -lt $max_retries ]; do
             result=$(curl -X GET --silent --retry ${{ env.RETRY }} --fail \
               'https://api.balena-cloud.com/v6/release_tag?$select=id,value&$filter=release%20eq%20${{ steps.push-release.outputs.release_id }}%20and%20tag_key%20eq%20%27${{ env.SUT_RESULT_TAG_KEY }}%27' \
               -H 'authorization: Bearer ${{ secrets.BALENACLOUD_API_KEY }}' \
