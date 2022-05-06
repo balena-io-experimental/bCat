@@ -105,19 +105,6 @@ jobs:
         run: |
           set -uae
 
-          [[ '${{ env.VERBOSE }}' =~ on|On|Yes|yes|true|True ]] && set -x
-          balena login --token '${{ secrets.BALENACLOUD_API_KEY }}'
-          balena whoami
-
-          while [[ "$(curl -X POST --silent --retry ${{ env.RETRY }} --fail \
-            'https://api.${{ env.ENVIRONMENT }}/supervisor/v1/device' \
-            --header 'authorization: Bearer ${{ secrets.BALENACLOUD_API_KEY }}' \
-            --header 'Content-Type:application/json' \
-            --data '{"uuid": "${{ steps.find-test-device.outputs.balena_dut_uuid }}", "method": "GET"}' \
-            --compressed | jq -r '.update_pending')" =~ ^true$ ]]; do
-              sleep "$(( ( RANDOM % ${{ env.RETRY }} ) + ${{ env.RETRY }} ))s"
-          done
-
           max_retries=100
           retry_count=1
 
@@ -140,43 +127,32 @@ jobs:
               ((retry_count++))
             fi
           done
+          echo "::set-output name=sut-container-result::${result}"
 
-      # - name: Can we stream the logs from the SUT container (Stretch goals)
-      #   id: sut-container-status
-      #   if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
-      #   run: |
+      - name: Stream logs from SUT container
+        id: sut-container-logs
+        if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
+        run: |
+          set -uae
+
+          [[ '${{ env.VERBOSE }}' =~ on|On|Yes|yes|true|True ]] && set -x
+          balena login --token '${{ secrets.BALENACLOUD_API_KEY }}'
+          balena whoami
+
+          balena logs ${{ steps.find-test-device.outputs.balena_dut_uuid }} --service sut
+
+      - name: Mark release result
+        id: result-check
+        if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
+        run: |
+          set -uae
+
+          if [ "${{env.sut-container-result}}" = "0" ] ; then
+            exit 0
+          fi
+
+          echo "Release failed"
+          exit 1 
+
 
       # (TBC) additional overrides for testing (i.e. DB_USER, DB_PASSWORD, etc.)
-      # - name: Poll for SUT container STATUS
-      #   id: sut-container-status
-      #   if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
-      #   run: |
-
-      # - name: Poll for SUT container STATUS
-      #   id: sut-container-status
-      #   if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
-      #   run: |
-      #     while true; do
-      #       set -uae
-      #       result = curl -X GET --silent --retry ${{ env.RETRY }} --fail -o /dev/null \
-      #       'https://api.balena-cloud.com/v6/release_tag?\$filter=release/commit%20eq%20${{ steps.push-release.outputs.release_id }}' \
-      #       -H 'Content-Type: application/json' \
-      #       -H 'Authorization: Bearer ${{ secrets.BALENACLOUD_API_KEY }}'
-
-      #       if result === '"success"'; then
-      #         echo "::set-output name=sut_container_status::success"
-      #       else
-      #         echo "::set-output name=sut_container_status::failure"
-      #       fi
-      #     done
-
-      # - name: MARK THE RELEASE WITH EXIT CODE
-      #   id: generate-compose
-      #   if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
-      #   run: OUR DOCKER COMPOSE GENERATOR
-
-
-      # - name: PASS/FAIL the release
-      #   id: generate-compose
-      #   if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
-      #   run: OUR DOCKER COMPOSE GENERATOR
