@@ -15,9 +15,8 @@ env:
   ENVIRONMENT: balena-cloud.com
   RELEASES: 50
   RETRY: 3
-  TEST_DEVICE_TYPE: qemux86-64
   SUT_RESULT_TAG_KEY: test_result
-  VERBOSE: "true"
+  VERBOSE: "silent"
 
 jobs:
   balena-automated-testing:
@@ -28,7 +27,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: install additional dependencies
+      - name: Install additional dependencies
         id: extra-dependencies
         run: |
           set -ue
@@ -42,12 +41,12 @@ jobs:
           grep -q "${RUNNER_TEMP}/balena-cli" "${GITHUB_PATH}" \
             || echo "${RUNNER_TEMP}/balena-cli" >> "${GITHUB_PATH}"
 
-      - name: produce docker-compose
+      - name: Produce docker-compose containing SUT container
         id: generate-compose
         if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
         run: yq '. *= load("docker-compose.test.yml")' docker-compose.yml > docker-new.yml; cat docker-new.yml > docker-compose.yml; rm docker-new.yml
 
-      - name: push draft or finalise release
+      - name: Push release to balenaCloud (draft/final)
         id: push-release
         uses: balena-io/deploy-to-balena-action@v0.10.7
         with:
@@ -56,7 +55,7 @@ jobs:
           fleet: ${{ env.FLEET }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: find DUT device
+      - name: Find viable DUT device to run our tests
         id: find-test-device
         run: |
           set -uae
@@ -83,7 +82,7 @@ jobs:
           echo "::set-output name=balena_dut_uuid::${dut_uuid}"
 
       # https://github.com/balena-io/balena-cli/issues/1543
-      - name: pin DUT device to draft release
+      - name: Pin DUT device to our recently created draft release
         id: pin-device
         if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
         run: |
@@ -99,7 +98,7 @@ jobs:
             --data-raw "{\"should_be_running__release\":${{ steps.push-release.outputs.release_id }}}" \
             --compressed
 
-      - name: wait for SUT result
+      - name: Wait for SUT result
         id: wait-test-result
         if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
         run: |
@@ -120,13 +119,13 @@ jobs:
             if [ -n "$result" ]; then
               balena login --token '${{ secrets.BALENACLOUD_API_KEY }}'
               balena whoami
-              balena logs ${{ steps.find-test-device.outputs.balena_dut_uuid }} --service sut
+              balena logs ${{ steps.find-test-device.outputs.balena_dut_uuid }} --service sut | tail -100
 
               echo "::set-output name=sut_container_status::${result}"
-              curl -X DELETE --silent --retry ${{ env.RETRY }} --fail -o /dev/null \
-                'https://api.balena-cloud.com/v6/release_tag?$select=id,value&$filter=release%20eq%20${{ steps.push-release.outputs.release_id }}%20and%20tag_key%20eq%20%27${{ env.SUT_RESULT_TAG_KEY }}%27' \
-                -H 'authorization: Bearer ${{ secrets.BALENACLOUD_API_KEY }}' \
-                -H 'content-type: application/json'
+              # curl -X DELETE --silent --retry ${{ env.RETRY }} --fail -o /dev/null \
+              #   'https://api.balena-cloud.com/v6/release_tag?$select=id,value&$filter=release%20eq%20${{ steps.push-release.outputs.release_id }}%20and%20tag_key%20eq%20%27${{ env.SUT_RESULT_TAG_KEY }}%27' \
+              #   -H 'authorization: Bearer ${{ secrets.BALENACLOUD_API_KEY }}' \
+              #   -H 'content-type: application/json'
               exit 0
             else
               sleep 10
