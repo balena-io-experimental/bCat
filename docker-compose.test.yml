@@ -6,10 +6,11 @@ services:
     build: ./sut
     privileged: true
     restart: "no"
+    network_mode: host
     depends_on:
-      - "audio"
+      - "browser"
     volumes:
-      - 'pulse:/run/pulse'
+      - 'settings:/data' # Only required if using PERSISTENT flag (see below)'
     labels:
       io.balena.features.supervisor-api: 1
       

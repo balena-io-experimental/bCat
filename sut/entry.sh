@@ -2,16 +2,16 @@
 
 set -ex
 
-recordedFile=/usr/src/result.wav
+recordedFile=/data/result.png
 
 echo "Starting SUT..."
+cp testImage.png /data
 
-# chmod +x test.sh
-# ./test.sh
+npm start
 
-# result=$?
+result=$?
 
-# echo "SUT exited with code $result"
+echo "SUT exited with code $result"
 
 release_id=$(curl "${BALENA_SUPERVISOR_ADDRESS}/v2/applications/${BALENA_APP_ID}/state?apikey=${BALENA_SUPERVISOR_API_KEY}" \
     | jq -r '.local[].services[].releaseId')
