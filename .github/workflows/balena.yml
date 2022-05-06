@@ -105,6 +105,8 @@ jobs:
         run: |
           set -uae
 
+          [[ '${{ env.VERBOSE }}' =~ on|On|Yes|yes|true|True ]] && set -x
+
           max_retries=100
           retry_count=1
 
@@ -116,6 +118,10 @@ jobs:
               | jq -r '.d[].value?')
 
             if [ -n "$result" ]; then
+              balena login --token '${{ secrets.BALENACLOUD_API_KEY }}'
+              balena whoami
+              balena logs ${{ steps.find-test-device.outputs.balena_dut_uuid }} --service sut
+
               echo "::set-output name=sut_container_status::${result}"
               curl -X DELETE --silent --retry ${{ env.RETRY }} --fail -o /dev/null \
                 'https://api.balena-cloud.com/v6/release_tag?$select=id,value&$filter=release%20eq%20${{ steps.push-release.outputs.release_id }}%20and%20tag_key%20eq%20%27${{ env.SUT_RESULT_TAG_KEY }}%27' \
@@ -127,32 +133,6 @@ jobs:
               ((retry_count++))
             fi
           done
-          echo "::set-output name=sut-container-result::${result}"
-
-      - name: Stream logs from SUT container
-        id: sut-container-logs
-        if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
-        run: |
-          set -uae
-
-          [[ '${{ env.VERBOSE }}' =~ on|On|Yes|yes|true|True ]] && set -x
-          balena login --token '${{ secrets.BALENACLOUD_API_KEY }}'
-          balena whoami
-
-          balena logs ${{ steps.find-test-device.outputs.balena_dut_uuid }} --service sut
-
-      - name: Mark release result
-        id: result-check
-        if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed'}}
-        run: |
-          set -uae
-
-          if [ "${{env.sut-container-result}}" = "0" ] ; then
-            exit 0
-          fi
-
-          echo "Release failed"
-          exit 1 
-
+          exit 1
 
       # (TBC) additional overrides for testing (i.e. DB_USER, DB_PASSWORD, etc.)
