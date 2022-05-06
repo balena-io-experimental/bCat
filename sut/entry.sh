@@ -13,8 +13,8 @@ result=$?
 
 echo "SUT exited with code $result"
 
-release_id=$(curl "${BALENA_SUPERVISOR_ADDRESS}/v2/applications/${BALENA_APP_ID}/state?apikey=${BALENA_SUPERVISOR_API_KEY}" \
-    | jq -r '.local[].services[].releaseId')
+release_id=$(curl "${BALENA_SUPERVISOR_ADDRESS}/v2/applications/state?apikey=${BALENA_SUPERVISOR_API_KEY}" \
+    | jq -r '.[].services.sut.releaseId')
 
 echo ${release_id}
 
