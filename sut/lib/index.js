@@ -67,7 +67,7 @@ const main = async () => {
     });
     writestream.end()
 
-
+    await bluebird.delay(1000*10);
     console.log(`Checking screenshot against reference image...`);
     let pass = await new Promise((resolve, reject) => {
         looksSame('/data/result.png', '/data/testImage.png', {ignoreCaret: true, tolerance: 400}, function(err, result){
