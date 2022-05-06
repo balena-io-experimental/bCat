@@ -69,7 +69,7 @@ jobs:
           echo "::set-output name=balena_app_id::${app_id}"
 
           dut_id=$(curl --silent --retry ${{ env.RETRY }} -o /dev/null \
-            'https://api.${{ env.ENVIRONMENT }}/v6/device?$top=1&$select=id&$filter=belongs_to__application%20eq%20(${app_id})%20and%20device_tag/any(dt:dt/tag_key%20eq%20%27DUT%27%20and%20value%20eq%20%27${{ env.DEVICE_TYPE }}%27)' \
+            "https://api.${{ env.ENVIRONMENT }}/v6/device?$top=1&$select=id&$filter=belongs_to__application%20eq%20(${app_id})%20and%20device_tag/any(dt:dt/tag_key%20eq%20%27DUT%27%20and%20value%20eq%20%27${{ env.DEVICE_TYPE }}%27)" \
             -H 'authorization: Bearer ${{ secrets.BALENACLOUD_API_KEY }}' \
             -H 'content-type: application/json' \
             | jq -r '.d[].id')
