@@ -70,7 +70,7 @@ const main = async () => {
 
     console.log(`Checking screenshot against reference image...`);
     let pass = await new Promise((resolve, reject) => {
-        looksSame('/data/result.png', '/data/testImage.png', function(err, result){
+        looksSame('/data/result.png', '/data/testImage.png', {ignoreCaret: true, tolerance: 400}, function(err, result){
             console.log(err)
             console.log(result)
             if(result.equal){
