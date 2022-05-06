@@ -7,7 +7,7 @@ ENV UDEV=on
 
 COPY lib lib
 COPY package.json package.json
-RUN npm install
+RUN npm install && install_packages jq 
 
 COPY testImage.png testImage.png
 
