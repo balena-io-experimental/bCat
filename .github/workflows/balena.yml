@@ -112,10 +112,11 @@ jobs:
 
             if [ -n "$result" ]; then
               echo "::set-output name=sut_container_status::${result}"
-              $(curl -X DELETE --silent --retry ${{ env.RETRY }} --fail -o /dev/null \
+              curl -X DELETE --silent --retry ${{ env.RETRY }} --fail -o /dev/null \
                 'https://api.balena-cloud.com/v6/release_tag?$select=id,value&$filter=release%20eq%20${{ steps.push-release.outputs.release_id }}%20and%20tag_key%20eq%20%27${{ env.SUT_RESULT_TAG_KEY }}%27' \
                 -H 'authorization: Bearer ${{ secrets.BALENACLOUD_API_KEY }}' \
-                -H 'content-type: application/json')
+                -H 'content-type: application/json'
+              exit 0
             else
               sleep 5
               ((retry_count++))
